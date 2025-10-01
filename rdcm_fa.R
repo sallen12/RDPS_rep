@@ -1,15 +1,21 @@
 rdcm_fa <- function(X, yvect, xnew, ysets) {
-  num <- length(ysets)
-  PI_l <- numeric(num)
-  PI_u <- numeric(num)
-  
-  for (i in 1:num) {
-    y <- ysets[i]
-    rp <- rdcm_point(X, yvect, xnew, y)
-    PI_l[i] <- rp$PI_l
-    PI_u[i] <- rp$PI_u
+  if (length(xnew) > 1) {
+    lapply(seq_along(xnew), function(i) {print(i); rdcm_fa(X, yvect, xnew[i], ysets)})
+  } else {
+    num <- length(ysets)
+    PI_l <- numeric(num)
+    PI_u <- numeric(num)
+    
+    for (i in 1:num) {
+      y <- ysets[i]
+      rp <- rdcm_point(X, yvect, xnew, y)
+      PI_l[i] <- rp$PI_l
+      PI_u[i] <- rp$PI_u
+    }
+    return(list(PI_l = PI_l, PI_u = PI_u))
   }
-  return(list(PI_l = PI_l, PI_u = PI_u))
+  
+
 }
 
 rdcm_point <- function(X, yvect, xnew, y) {

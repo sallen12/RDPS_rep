@@ -14,18 +14,22 @@
 # 5) We let the y varying in R and obtain teh whole predictive band
 
 
-rob_rdcm_fa_yprime <- function(xvect,yvect,xnew,ysets) {
-  num=length(ysets)
-  PI_l=numeric(num)
-  PI_u=numeric(num)
-  
-  for (i in 1:num) {
-    y=ysets[i]
-    rp=rob_rdcm_point(xvect,yvect,xnew,y)
-    PI_l[i]=rp$PI_l
-    PI_u[i]=rp$PI_u
+rob_rdcm_fa_yprime <- function(X, yvect, xnew, ysets) {
+  if (length(xnew) > 1) {
+    lapply(seq_along(xnew), function(i) {print(i); rob_rdcm_fa_yprime(X, yvect, xnew[i], ysets)})
+  } else {
+    num=length(ysets)
+    PI_l=numeric(num)
+    PI_u=numeric(num)
+    
+    for (i in 1:num) {
+      y=ysets[i]
+      rp=rob_rdcm_point(X, yvect, xnew, y)
+      PI_l[i]=rp$PI_l
+      PI_u[i]=rp$PI_u
+    }
+    return(list(rob_PI_l=PI_l,rob_PI_u=PI_u))
   }
-  return(list(rob_PI_l=PI_l,rob_PI_u=PI_u))
 }
 
 rob_rdcm_point <- function(xvect,yvect,xnew,y) {
