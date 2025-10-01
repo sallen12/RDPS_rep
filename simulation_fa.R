@@ -1,43 +1,39 @@
+################################################################################
+## Simulation Study
+
 source("rdcm_fa.R")
 source("rob_rdcm_yprime.R")
 source("lspm_fa.R")
 
-# Simulation Study
+set.seed(75210322)
+n <- 100
+setting <- "nonlinear" # one of "linear" and "nonlinear"
 
-# 1. SETTING ################################################
+# 1. DATA ################################################
 
-# 1.1 Linear Gaussian: #######################################
-set.seed(123)
-n <- 20
-xvect <- rnorm(n)
-yvect <- 2 * xvect + rnorm(n)
-xnew <- rnorm(1)
+if (setting == "linear") {
+  # 1.1 Linear: ############################################
+  
+  x <- rnorm(n)
+  y <- rnorm(n, x)
+  x_new <- rnorm(n)
+  
+  y_sets <- seq(min(y), max(y), 0.1)
+  
+  true_cdf <- function(y, x) pnorm(y, mean = x, sd = 1)
+  
+} else if (setting == "nonlinear") {
+  # 1.2 Nonlinear: #########################################
+  
+  x <- runif(n, 0, 10)
+  y <- rnorm(n, 2*x + 5*sin(x), abs(x/5))
+  x_new <- runif(1, 0, 10)
+  
+  y_sets <- seq(min(y), max(y), 0.1)
 
-ysets=seq(min(yvect),max(yvect),0.1)
-
-# True CDF
-true_cdf <- function(y) pnorm(y, mean = 2 * xnew, sd = 1)
-t_cdf=true_cdf(ysets)
-#############################################################
-
-# 1.2 Less isotonic: #########################################
-set.seed(123)
-n<-20
-xvect <- runif(n,0,10)
-ymean <- 2*xvect+5*sin(xvect)
-yvar <- (xvect/5)^2
-yvect <- rnorm(n,ymean,yvar)
-xnew <- rnorm(1,mean(xvect))
-
-ysets=seq(min(yvect),max(yvect),0.1)
-
-# True CDF
-true_cdf <- function(y, xnew) {
-  mu <- 2 * xnew + 5 * sin(xnew)
-  sigma <- xnew / 5       
-  pnorm(y, mean = mu, sd = sigma)
+  true_cdf <- function(y, x) pnorm(y, mean = 2*x + 5*sin(x), sd = abs(x/5))
 }
-t_cdf <- true_cdf(ysets, xnew)
+
 
 #############################################################
 
@@ -45,38 +41,39 @@ t_cdf <- true_cdf(ysets, xnew)
 # 2. PREDICTIVE BANDS #############################################
 
 # RDCM Predictive Bands
-rdcm_result=rdcm_fa(xvect,yvect,xnew,ysets)
-PI_l=rdcm_result$PI_l
-PI_u=rdcm_result$PI_u
+rdcm_result <- rdcm_fa(x, y, x_new, y_sets)
+PI_l <- rdcm_result$PI_l
+PI_u <- rdcm_result$PI_u
 
 # Robust RDCM
-rob_rdcm_yprime_result=rob_rdcm_fa_yprime(xvect,yvect,xnew,ysets)
-rob_PI_l=rob_rdcm_yprime_result$rob_PI_l
-rob_PI_u=rob_rdcm_yprime_result$rob_PI_u
+rob_rdcm_yprime_result <- rob_rdcm_fa_yprime(x, y, x_new, y_sets)
+rob_PI_l <- rob_rdcm_yprime_result$rob_PI_l
+rob_PI_u <- rob_rdcm_yprime_result$rob_PI_u
 
 # LSPM Predictive Bands
-lspm_result=lspm_fa(xvect,yvect,xnew,ysets)
-PI_lpm=lspm_result$PI_l
-PI_upm=lspm_result$PI_u
+lspm_result <- lspm_fa(x, y, x_new, y_sets)
+PI_lpm <- lspm_result$PI_l
+PI_upm <- lspm_result$PI_u
 
 
 # 3. PLOT ####################################################
 
-# plot of the real cdf
-plot(ysets,t_cdf,type='l')
+library(ggplot2)
 
-# rdcm
-lines(ysets, PI_l, type = "l", col = "red", lwd = 1, lty = 1)
-lines(ysets, PI_u, type = "l", col = "red", lwd = 1, lty = 1)
+t_cdf <- true_cdf(y_sets, x_new)
 
-# robust rdcm
-lines(ysets, rob_PI_l, type = "l", col = "green", lwd = 1, lty = 1)
-lines(ysets, rob_PI_u, type = "l", col = "green", lwd = 1, lty = 1)
+df <- data.frame(x = y_sets,
+                 l = c(t_cdf, PI_l, rob_PI_l, PI_lpm),
+                 u = c(t_cdf, PI_u, rob_PI_u, PI_upm),
+                 mth = rep(c(" Truth", "RDPS", "RDPS (rob.)", "LSPM"), each = length(y_sets)))
+ggplot(df) + 
+  geom_line(aes(x = x, y = l, col = mth)) +
+  geom_line(aes(x = x, y = u, col = mth)) +
+  scale_y_continuous(name = "G(x)") +
+  scale_color_manual(values = c("black", scales::hue_pal()(3))) +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        legend.title = element_blank(), 
+        legend.position = "bottom")
+ggsave(paste0("Figures/ss_", setting, "_", n, ".png"), width = 5, height = 3.5)
 
-# lspm
-lines(ysets, PI_lpm, type = "l", col = "blue", lwd = 1, lty = 1)
-lines(ysets, PI_upm, type = "l", col = "blue", lwd = 1, lty = 1)
-
-legend('topleft',legend = c("cdf", "rdcm", "rob_rdcm", "lspm"),
-       col = c("black", "red", "green", "blue"),lty = 1, 
-       lwd = 1, cex = 0.7, bty = "n")

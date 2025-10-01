@@ -3,7 +3,7 @@ lspm_fa=function(X,yvect,xnew,ysets) {
   PI_l=numeric(num)
   PI_u=numeric(num)
   
-  Xf <- c(xvect,xnew)
+  Xf <- c(X,xnew)
   H <- Xf %*% solve(t(Xf) %*% Xf) %*% t(Xf)
   n <- length(yvect)
   a=numeric(n)
