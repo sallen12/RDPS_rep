@@ -4,9 +4,9 @@
 ################################################################################
 
 ## wrapper to fit the RDPS
-rdps_lin <- function(x, y, x_new, y_sets, method = "ols", ...) {
+rdps_lin <- function(x, y, x_new, y_eval, method = "ols", ...) {
   if (length(x_new) > 1) {
-    lapply(seq_along(x_new), function(i) {print(i); rdps_lin(x, y, x_new[i], y_sets, method = method, ...)})
+    lapply(seq_along(x_new), function(i) {print(i); rdps_lin(x, y, x_new[i], y_eval, method = method, ...)})
   } else {
     
     x <- c(x, x_new)
@@ -19,7 +19,7 @@ rdps_lin <- function(x, y, x_new, y_sets, method = "ols", ...) {
     a <- out$a
     b <- out$b
     
-    b <- outer(b, y_sets, "+")
+    b <- outer(b, y_eval, "+")
     if (length(S0) > 1) {
       Ky <- colSums(b[S0, ] >= 0)
     } else if (length(S0) == 1) {
@@ -31,14 +31,14 @@ rdps_lin <- function(x, y, x_new, y_sets, method = "ols", ...) {
     # Compute c_j = b_j / a_j
     c_y <- b / a
     c_y <- c_y[a != 0, ]
-    c_sort <- rbind(rep(-1e16, length(y_sets)), c_y, rep(1e16, length(y_sets)), y_sets)
+    c_sort <- rbind(rep(-1e16, length(y_eval)), c_y, rep(1e16, length(y_eval)), y_eval)
     c_sort <- apply(c_sort, 2, sort)
       
     # Compute representative points
     y_prime <- (c_sort[-1, ] + c_sort[-nrow(c_sort), ]) / 2
     
     # Compute G
-    G_values <- sapply(1:nrow(y_prime), function(i) sapply(1:ncol(y_prime), function(j) G_x(Sp, Sm, Ky[j], y_prime[i, j], c_y[, j], y_sets[j], n)))
+    G_values <- sapply(1:nrow(y_prime), function(i) sapply(1:ncol(y_prime), function(j) G_x(Sp, Sm, Ky[j], y_prime[i, j], c_y[, j], y_eval[j], n)))
     
     PI_l <- apply(G_values, 1, min, na.rm = T)
     PI_u <- apply(G_values, 1, max, na.rm = T)
