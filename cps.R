@@ -4,7 +4,7 @@
 
 lspm <- function(x, y, x_new, y_eval) {
   if (length(x_new) > 1) {
-    lapply(seq_along(x_new), function(i) {print(i); lspm_fa(x, y, x_new[i], y_eval)})
+    lapply(seq_along(x_new), function(i) {print(i); lspm(x, y, x_new[i], y_eval)})
   } else {
     
     num <- length(y_eval)
@@ -34,7 +34,7 @@ lspm <- function(x, y, x_new, y_eval) {
         if (c_sorted[i] < y_j && y_j < c_sorted[i+1]) {
           PI_l[j] <- (i - 1)/(n + 1)  # because the paper starts with c[0] but R with c[1]
           PI_u[j] <- (i)/(n + 1)      # because the paper starts with c[0] but R with c[1]
-        } else if (y == c_sorted[i]) {
+        } else if (y_j == c_sorted[i]) {
           idx <- which(c_sorted == c_sorted[i])
           i_prime <- idx[1]
           i_secondo <- idx[length(idx)]
@@ -50,7 +50,7 @@ lspm <- function(x, y, x_new, y_eval) {
 
 krrpm <- function(x, y, x_new, y_eval, lambda = 1) {
   if (length(x_new) > 1) {
-    lapply(seq_along(x_new), function(i) {print(i); krrpm_fa(x, y, x_new[i], y_eval, lambda)})
+    lapply(seq_along(x_new), function(i) {print(i); krrpm(x, y, x_new[i], y_eval, lambda)})
   } else {
     
     num <- length(y_eval)
@@ -59,7 +59,7 @@ krrpm <- function(x, y, x_new, y_eval, lambda = 1) {
     
     n <- length(y)
     
-    Xf <- c(x, xnew)
+    Xf <- c(x, x_new)
     K <- exp(-abs(outer(Xf, Xf, "-"))) # Laplacian kernel
     H <- K %*% solve(K + lambda*diag(n + 1))
     
@@ -83,7 +83,7 @@ krrpm <- function(x, y, x_new, y_eval, lambda = 1) {
         if (c_sorted[i] < y_j && y_j < c_sorted[i+1]) {
           PI_l[j] <- (i - 1)/(n + 1)  # because the paper starts with c[0] but R with c[1]
           PI_u[j] <- (i)/(n + 1)      # because the paper starts with c[0] but R with c[1]
-        } else if (y == c_sorted[i]) {
+        } else if (y_j == c_sorted[i]) {
           idx <- which(c_sorted == c_sorted[i])
           i_prime <- idx[1]
           i_secondo <- idx[length(idx)]

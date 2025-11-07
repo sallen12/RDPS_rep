@@ -5,7 +5,7 @@
 ## wrapper to fit the RDPS
 rdps <- function(x, y, x_new, y_prime, y_eval, mth = "ols", del = 1, ...) {
   if (length(x_new) > 1) {
-    lapply(seq_along(x_new), function(i) {print(i); rdps(x, y, x_new[i], y_grid, mth = mth, del = del, ...)})
+    lapply(seq_along(x_new), function(i) {print(i); rdps(x, y, x_new[i], y_prime, y_eval, mth = mth, del = del, ...)})
   } else {
     out <- lapply(y_prime, function(yy) find_y_hat(x = c(x, x_new), y = c(y, yy), mth = mth, del = del, ...))
     G <- sapply(out, function(x) rd_G(x$y_hat, x$res, y_eval))
@@ -39,7 +39,7 @@ find_y_hat <- function(x, y, x_new = NULL, mth = "ols", del = 1, ...) {
       y_hat_new <- H %*% y |> as.vector()
     }
   }
-  # deleted RDPS removes the del training points with the highest residuals
+  # deleted RDPS removes the del training points with the highest residuals and refits
   if (del) {
     ind <- order(abs(y_hat - y), decreasing = TRUE)[1:del]
     x_new <- x[length(x)]
@@ -48,7 +48,7 @@ find_y_hat <- function(x, y, x_new = NULL, mth = "ols", del = 1, ...) {
     out <- find_y_hat(x, y, x_new = x_new, mth = mth, del = F, ...)
     return(out)
   } else {
-    y_hat_new <- y_hat[length(y_hat)]
+    if (is.null(x_new)) y_hat_new <- y_hat[length(y_hat)]
     return(list(y_hat = y_hat_new, res = y - y_hat))
   }
 }

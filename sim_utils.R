@@ -36,6 +36,28 @@ get_krr_lambda <- function(n = 100, setting = "linear") {
   l_vec[which.min(mse)]
 }
 
+## wrapper to fit and save predictive systems
+get_predsys <- function(x_tr, y_tr, x_ts, y_prime, y_eval, lambda, setting, load = T) {
+  if (!load) {
+    # RDPS
+    rdps_ols_out <- rdps(x_tr, y_tr, x_ts, y_prime, y_eval, mth = "ols", del = 5)
+    rdps_krr_out <- rdps(x_tr, y_tr, x_ts, y_prime, y_eval, mth = "krr", lambda = lambda, del = 5)
+    
+    # Conformal Predictive Systems
+    lspm_out <- lspm(x_tr, y_tr, x_ts, y_eval)
+    krrpm_out <- krrpm(x_tr, y_tr, x_ts, y_eval, lambda = lambda)
+    
+    ps_list <- list(rdps_ols = rdps_ols_out, rdps_krr = rdps_krr_out, lspm = lspm_out, krrpm = krrpm_out)
+    
+    # save results
+    saveRDS(ps_list, file = paste0("Results/results_", setting, "_100.RDS"))
+  } else {
+    # load saved results
+    ps_list <- readRDS(paste0("Results/results_", setting, "_100.RDS"))
+  }
+  return(ps_list)
+}
+
 ## function to get prediction intervals
 get_predint <- function(int, alpha, y_eval) {
   low <- y_eval[int$PI_u <= alpha/2]

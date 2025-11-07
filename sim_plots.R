@@ -5,10 +5,9 @@
 library(ggplot2)
 
 ## plot demonstration of the residual distribution forecasting procedure and predictive system
-plot_demo <- function(x_tr, y_tr) {
+plot_demo <- function(x_tr, y_tr, y_eval, y_prime) {
   
   ## fit models
-  
   y_hat_ols <- lm(y_tr ~ x_tr) |> predict()
   y_hat_krr <- {
     K <- exp(-abs(outer(x_tr, x_tr, "-"))) # uses laplacian kernel
@@ -48,7 +47,7 @@ plot_demo <- function(x_tr, y_tr) {
   ind <- which.min(abs(x_tr - 2.5))
   G_ls <- ecdf(c(y_hat_ols[ind] + (y_tr - y_hat_ols)))
   G_krr <- ecdf(c(y_hat_krr[ind] + (y_tr - y_hat_krr)))
-  df <- data.frame(x = y_sets, G = c(G_ls(y_sets), G_krr(y_sets)), mth = rep(c("LS", "KRR"), each = length(y_sets)))
+  df <- data.frame(x = y_eval, G = c(G_ls(y_eval), G_krr(y_eval)), mth = rep(c("LS", "KRR"), each = length(y_eval)))
   ggplot(df) + geom_step(aes(x = x, y = G, col = mth)) +
     scale_x_continuous(name = "y", limits = c(0, 15.5), expand = c(0, 0)) +
     scale_y_continuous(name = "G(y)", limits = c(0, 1)) +
@@ -61,8 +60,8 @@ plot_demo <- function(x_tr, y_tr) {
   ggsave("Figures/ex_preddist.png", width = 3, height = 3)
   
   ## add predictive systems
-  PI_ols <- rordcm_fa(x_tr, y_tr, x_tr[ind], del = F, y_sets, mth = "ols")
-  PI_krr <- rordcm_fa(x_tr, y_tr, x_tr[ind], del = T, y_sets, mth = "krr", lambda = lambda)
+  PI_ols <- rdps(x_tr, y_tr, x_tr[ind], y_prime, y_eval, mth = "ols", del = 1)
+  PI_krr <- rdps(x_tr, y_tr, x_tr[ind], y_prime, y_eval, mth = "krr", del = 1, lambda = lambda)
   df$PI_l <- c(PI_ols$PI_l, PI_krr$PI_l)
   df$PI_u <- c(PI_ols$PI_u, PI_krr$PI_u)
   ggplot(df) + 
@@ -101,7 +100,7 @@ plot_cov_vs_ps <- function(ps_list, y_eval, x_ts, setting) {
     x_ind <- x_ts[ind]
   }
   
-  t_cdf <- sapply(x_ind, true_cdf, y = y_sets)
+  t_cdf <- sapply(x_ind, true_cdf, y = y_eval)
   t_cdf <- rbind(t_cdf, t_cdf, t_cdf, t_cdf) |> c()
   Pi_l <- sapply(ind, function(j) c(ps_list[['rdps_ols']][[j]]$PI_l, 
                                     ps_list[['rdps_krr']][[j]]$PI_l, 
@@ -133,10 +132,25 @@ plot_cov_vs_ps <- function(ps_list, y_eval, x_ts, setting) {
 plot_example <- function(ps_list, y_eval, setting) {
   if (setting == "linear") {
     val <- 0
+    
+    # true conditional distribution function
     true_cdf <- function(y, x) pnorm(y, mean = x, sd = 1) 
+    
+    # covariate values at which to plot example predictive systems
+    x_ind <- seq(-2, 2, 0.5)
+    ind <- sapply(x_ind, function(x) which.min(abs(x_ts - x)))
+    x_ind <- x_ts[ind]
+    
   } else if (setting == "nonlinear") {
     val <- 5
+    
+    # true conditional distribution function
     true_cdf <- function(y, x) pnorm(y, mean = 2*x + 5*sin(x), sd = abs(x/5))
+    
+    # covariate values at which to plot example predictive systems
+    x_ind <- 1:9
+    ind <- sapply(x_ind, function(x) which.min(abs(x_ts - x)))
+    x_ind <- x_ts[ind]
   }
 
   Pi_l <- sapply(ind, function(j) c(ps_list[['rdps_ols']][[j]]$PI_l, 

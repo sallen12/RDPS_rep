@@ -12,9 +12,9 @@ set.seed(75210322)
 n_tr <- 100             # training data size
 n_ts <- 1000            # test data size
 
-setting <- "linear"     # one of "linear" and "nonlinear"
+setting <- "nonlinear"  # one of "linear" and "nonlinear"
 
-load <- TRUE            # load or generate and save new results
+load <- F               # load or generate and save new results
 
 
 # 1. DATA ######################################################################
@@ -50,29 +50,13 @@ if (setting == "linear") {
   lambda <- get_krr_lambda(n = n_tr, setting = "nonlinear")
   
   # plot RDPS demonstation
-  plot_demo(x_tr, y_tr)
+  plot_demo(x_tr, y_tr, y_eval, y_prime)
 }
 
 
 # 2. PREDICTIVE SYSTEMS ########################################################
 
-if (!load) {
-  # RDPS
-  rdps_ols_out <- rdps(x_tr, y_tr, x_ts, y_sets, mth = "ols")                  # OLS 
-  rdps_krr_out <- rdps(x_tr, y_tr, x_ts, y_sets, mth = "krr", lambda = lambda) # KRR
-  
-  # Conformal Predictive Systems
-  lspm_out <- lspm_fa(x_tr, y_tr, x_ts, y_sets)                 # LSPM
-  krrpm_out <- krrpm_fa(x_tr, y_tr, x_ts, y_sets, a = lambda)   # KRRPM
-  
-  ps_list <- list(rdps_ols = rdps_ols_out, rdps_krr = rdps_krr_out, lspm = lspm_out, krrpm = krrpm_out)
-  
-  # save results
-  saveRDS(ps_list, file = paste0("Results/results_", setting, "_100.RDS"))
-} else {
-  # load saved results
-  ps_list <- readRDS(paste0("Results/results_", setting, "_100.RDS"))
-}
+ps_list <- get_predsys(x_tr, y_tr, x_ts, y_prime, y_eval, lambda, setting, load)
 
 
 # 3. PLOT ####################################################
@@ -83,7 +67,7 @@ plot_example(ps_list, y_eval, setting)
 # plot predictive systems for different covariate values
 plot_cov_vs_ps(ps_list, y_eval, x_ts, setting)
 
-# plot robust (delted) vs non-robust RDPS bounds
+# plot robust (deleted) vs non-robust RDPS bounds
 if (setting == "linear") plot_del_rdps(ps_list, x_tr, y_tr, x_ts, y_eval)
 
 
@@ -97,7 +81,7 @@ int_eval <- eval_predint(ps_list, y_ts, alpha_vec, y_eval)
 
 # plot performance
 
-plot_thick(ps_list, setting)    # Thickness
+plot_thick(ps_list, setting)     # Thickness
 
 plot_cov(int_eval, setting)      # Coverage
 
